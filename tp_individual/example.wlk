@@ -1,9 +1,7 @@
 
 class Entrada {
-  const banda
-
-  
-  const fecha // formato aaddaaaa
+  const property banda
+  const property fecha // formato aaddaaaa
   const precio_base = 1000
   var property impuestoProductora
 
@@ -12,9 +10,9 @@ class Entrada {
 
 class Asistente {
   const abono
-  const property historial = {}
+  const property historial = []
   var property dinero
-  const dtoXAbono //en porcentaje
+  var dtoXAbono //en porcentaje
 
   method comprarEntrada (entrada) {
     if (dinero > 0) {
@@ -23,11 +21,23 @@ class Asistente {
     }
   }
   method entradasDeAñoAnterior () {
-    historial.filter({ent => ent.fecha()%10000 == new Date().year()-1})
-}
-  method nombreDeBandas () {
-    historial.map({ent => ent.banda()})
+    return historial.filter({ent => ent.fecha()%10000 == new Date().year()-1})
   }
+  method nombreDeBandas () {
+    return historial.map({ent => ent.banda()}).distinct()
+  }
+
+  method esVip () = abono == "vip"
+
+  method bonificar () {
+    if (self.esVip()){
+      dtoXAbono += 1
+    }
+  }
+
+  method gananciaTotal () = historial.map({ent => ent.precioAlPublico()}).sum()
+
+  method cantidadDeEntradas () = historial.size()
 }
 
 class Banda {
@@ -72,15 +82,25 @@ class BandaIndie inherits Banda (){
 
 object productora {
   const asistentes = #{}
-  const listaDeEntradasDeUnAsistente = {asistente => asistente.historial()}
+  const property bandas = #{}
 
-  method gananciaTotal () {
-    return asistentes.map(listaDeEntradasDeUnAsistente.map({entrada => entrada.precioAlPublico()})).sum()
-  }
+  method todasLasEntradas () = 
+    asistentes.flatMap({a=>a.historial()})
 
-  method cantidadDeEntradasVendidas () {
-    return asistentes.map(listaDeEntradasDeUnAsistente).size()
+  method presupuestoDeTodasLasEntradas () = 
+    asistentes.flatMap({a=>a.nombreDeBandas()}).distinct().sum({unaBanda=>unaBanda.presupuesto()})
+
+  method entradasVendidas (unaBanda) = 
+    self.todasLasEntradas().count({ent=>ent.banda()==unaBanda})
+
+  method gananciaTotal () = (asistentes.map({a=>a.gananciaTotal()}).sum())- self.presupuestoDeTodasLasEntradas()
+
+  method cantidadDeEntradasVendidas () = asistentes.map({a=>a.cantidadDeEntradas()}).sum()
+
+  method bandaMasPopular () = 
+    bandas.max({unaBanda=>self.entradasVendidas(unaBanda)})
+
+  method bonificarVips () {
+    asistentes.forEach({a => a.bonificar()})
   }
-// APLANAR LAS LISTAS PARA QUE QUEDE UNA SOLA
-  method bandaMasPopular () {}
 }

@@ -60,6 +60,7 @@ class BandaDeRock inherits Banda (){
 class BandaDeTrap inherits Banda (){
   const tienenHielo
 
+  override method gastoExtra () = 0
   override method popularidad (){
     if (tienenHielo){
       canon = 1000000000
